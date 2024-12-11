@@ -1,0 +1,52 @@
+databases:
+  - name: dummy_database
+    databaseName: dummy_database_ezhn
+    user: rails
+    plan: free
+
+services:
+  - type: redis
+    name: dummy_redis
+    region: ohio
+    maxmemoryPolicy: noeviction
+    ipAllowList: []
+
+  - type: worker
+    name: sidekiq-worker
+    runtime: ruby
+    region: ohio
+    buildCommand: bundle install
+    startCommand: bundle exec sidekiq
+    envVars:
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: sidekiq-redis
+          property: connectionString
+      - key: RAILS_MASTER_KEY
+        sync: false
+
+  - type: web
+    name: pawanshendge28
+    runtime: ruby
+    plan: free
+    buildCommand: "./render-build.sh"
+    startCommand: "bundle exec rails server"
+    envVars:
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: dummy_redis
+          property: connectionString
+      - key: DATABASE_URL
+        fromDatabase:
+          name: dummy_database
+          property: connectionString
+      - key: RAILS_MASTER_KEY
+        sync: false
+      - key: WEB_CONCURRENCY
+        value: 2
+
+
+        # Redis -redis://red-ctckfhrtq21c73frmnvg:6379
+        # database - postgresql://dummy_database_ezhn_user:jw3DH60iqZ6rS6rDNZulaEXq1nNrAIyp@dpg-ctckd5btq21c73frl6hg-a/dummy_database_ezhn
